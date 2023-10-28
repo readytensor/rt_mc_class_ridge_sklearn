@@ -1,4 +1,4 @@
-# HistGradientBoosting Multiclass Classifier in Scikit-Learn with Shapley Explanations
+# Ridge Multiclass Classifier in Scikit-Learn with Shapley Explanations
 ## Project Description
 This repository is a dockerized implementation of the re-usable multiclass classifier model. It is implemented in flexible way so that it can be used with any multiclass classification dataset with the use of CSV-formatted data, and a JSON-formatted data schema file. The main purpose of this repository is to provide a complete example of a machine learning model implementation that is ready for deployment.
 The following are the requirements for using your data with this model:
@@ -11,7 +11,7 @@ The following are the requirements for using your data with this model:
 ---
 Here are the highlights of this implementation: <br/>
 - A flexible preprocessing pipeline built using **SciKit-Learn** and **feature-engine**. Transformations include missing value imputation, categorical encoding, outlier removal, feature selection, and feature scaling. <br/>
-- A HistGradientBoosting algorithm built using **SciKit-Learn**
+- A Ridge algorithm built using **SciKit-Learn**
 - Hyperparameter-tuning using **scikit-optimize**
 - SHAP explainer using the **shap** package
 - **FASTAPI** inference service for online inferences.
@@ -37,7 +37,7 @@ The following is the directory structure of the project:
   - **`data_models/`**: for data models for input validation including the schema, training and test files, and the inference request data. It also contains the data model for the batch prediction results.
   - **`schema/`**: for schema handler script. This script contains the class that provides helper getters/methods for the data schema.
   - **`preprocessing/`**: for data preprocessing scripts including the feature and target encoding/transformations. We use **Scikit-Learn** and **feature-engine** for preprocessing.
-  - **`prediction/`**: Scripts for the HistGradientBoosting classifier model implemented using **Scikit-Learn** library.
+  - **`prediction/`**: Scripts for the Ridge classifier model implemented using **Scikit-Learn** library.
   - **`hyperparameter_tuning/`**: for hyperparameter-tuning (HPT) functionality implemented using **Scikit-Optimize** for the model.
   - **`xai/`**: for explainable AI functionality implemented using **Shap** library. This provides local explanations for predictions.
   - **`serve.py`**: This script is used to serve the model as a REST API using **FastAPI**. It loads the artifacts and creates a FastAPI server to serve the model. It provides 3 endpoints: `/ping`, `/infer`, and `/explain`. The `/ping` endpoint is used to check if the server is running. The `/infer` endpoint is used to make predictions. The `/explain` endpoint is used to get local explanations for the predictions.
@@ -73,7 +73,7 @@ In this section we cover the following:
 ### To run locally (without Docker)
 - Create your virtual environment and install dependencies listed in `requirements.txt` which is inside the `requirements` directory.
 - Move the three example files (`smoke_test_schema.json`, `smoke_test_train.csv` and `smoke_test_test.csv`) in the `examples` directory into the `./model_inputs_outputs/inputs/schema`, `./model_inputs_outputs/inputs/data/training` and `./model_inputs_outputs/inputs/data/testing` folders, respectively (or alternatively, place your custom dataset files in the same locations).
-- Run the script `src/train.py` to train the HistGradientBoosting classifier model. This will save the model artifacts, including the preprocessing pipeline and label encoder, in the path `./model_inputs_outputs/model/artifacts/`. If you want to run with hyperparameter tuning then include the `-t` flag. This will also save the hyperparameter tuning results in the path `./model_inputs_outputs/outputs/hpt_outputs/`.
+- Run the script `src/train.py` to train the Ridge classifier model. This will save the model artifacts, including the preprocessing pipeline and label encoder, in the path `./model_inputs_outputs/model/artifacts/`. If you want to run with hyperparameter tuning then include the `-t` flag. This will also save the hyperparameter tuning results in the path `./model_inputs_outputs/outputs/hpt_outputs/`.
 - Run the script `src/predict.py` to run batch predictions using the trained model. This script will load the artifacts and create and save the predictions in a file called `predictions.csv` in the path `./model_inputs_outputs/outputs/predictions/`.
 - Run the script `src/serve.py` to start the inference service, which can be queried using the `/ping`, `/infer` and `/explain` endpoints. The service runs on port 8080.
 ### To run with Docker
