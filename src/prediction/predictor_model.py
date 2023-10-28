@@ -1,11 +1,11 @@
 import os
 import warnings
-from typing import Optional
+from typing import Optional, Union
 
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import RidgeClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.exceptions import NotFittedError
 
 warnings.filterwarnings("ignore")
@@ -15,38 +15,70 @@ PREDICTOR_FILE_NAME = "predictor.joblib"
 
 
 class Classifier:
-    """A wrapper class for the Ridge multiclass classifier.
+    """A wrapper class for the HistGradientBoosting multiclass classifier.
 
     This class provides a consistent interface that can be used with other
     classifier models.
     """
 
-    model_name = "ridge_multiclass_classifier"
+    model_name = "HistGradientBoosting_multiclass_classifier"
 
     def __init__(
-        self,
-        alpha: Optional[float] = 1.0,
-        **kwargs,
+            self,
+            loss: Optional[str] = 'squared_error',
+            learning_rate: Optional[float] = 0.1,
+            max_depth: Optional[Union[int, None]] = None,
+            max_leaf_nodes: Optional[Union[int, None]] = 31,
+            min_samples_leaf: Optional[int] = 20,
+            **kwargs,
     ):
-        """Construct a new Ridge multiclass classifier.
+        """Construct a new HistGradientBoosting classifier.
 
-        Args: alpha (int, optional): Args: Constant that multiplies the L2 term, controlling regularization strength.
-        alpha must be a non-negative float i.e. in [0, inf) Defaults to 1.0
+        Args:
+            loss (optional, str):
+            {‘squared_error’, ‘absolute_error’, ‘gamma’, ‘poisson’, ‘quantile’}, default=’squared_error’
+            The loss function to use in the boosting process. Note that the “squared error”,
+            “gamma” and “poisson” losses actually implement “half least squares loss”, “half gamma deviance” and “half
+            poisson deviance” to simplify the computation of the gradient. Furthermore, “gamma” and “poisson” losses
+            internally use a log-link, “gamma” requires y > 0 and “poisson” requires y >= 0. “quantile” uses the pinball
+            loss.
+
+            learning_rate (optional, float): The learning rate, also known as shrinkage. This is used as a
+            multiplicative factor for the leaves values. Use 1 for no shrinkage.
+
+            max_depth (optional, int, None): The maximum depth of each tree. The depth of a tree is the number of
+            edges to go from the root to the deepest leaf. Depth isn’t constrained by default.
+
+            max_leaf_nodes (optional, int, None): The maximum number of leaves for each tree. Must be strictly
+            greater than 1. If None, there is no maximum limit.
+
+            min_samples_leaf (optional, int): The minimum number of samples per leaf. For small datasets with less
+            than a few hundred samples, it is recommended to lower this value since only very shallow trees would be
+            built.
+
         """
-        self.alpha = float(alpha)
+        self.loss = loss
+        self.learning_rate = float(learning_rate)
+        self.max_depth = max_depth
+        self.max_leaf_nodes = max_leaf_nodes
+        self.min_samples_leaf = min_samples_leaf
         self.model = self.build_model()
         self._is_trained = False
 
-    def build_model(self) -> RidgeClassifier:
-        """Build a new Ridge multiclass classifier."""
-        model = RidgeClassifier(
-            alpha=self.alpha,
-            random_state=0,
+    def build_model(self) -> HistGradientBoostingClassifier:
+        """Build a new Random Forest binary classifier."""
+        model = HistGradientBoostingClassifier(
+            loss=self.loss,
+            learning_rate=self.learning_rate,
+            max_depth=self.max_depth,
+            min_samples_leaf=self.min_samples_leaf,
+            max_leaf_nodes=self.max_leaf_nodes,
+            random_state=0
         )
         return model
 
     def fit(self, train_inputs: pd.DataFrame, train_targets: pd.Series) -> None:
-        """Fit the Ridge multiclass classifier to the training data.
+        """Fit the HistGradientBoosting multiclass classifier to the training data.
 
         Args:
             train_inputs (pandas.DataFrame): The features of the training data.
@@ -73,31 +105,24 @@ class Classifier:
         Returns:
             numpy.ndarray: The predicted class probabilities.
         """
-        decision_values = self.model.decision_function(inputs)
 
-        # Convert decision values to "pseudo-probabilities" using the sigmoid function
-        pseudo_probs = 1 / (1 + np.exp(-decision_values))
-
-        # Normalize the pseudo-probabilities so they sum to 1 for each instance
-        normalized_probs = pseudo_probs / pseudo_probs.sum(axis=1, keepdims=True)
-
-        return normalized_probs
+        return self.model.predict_proba(inputs)
 
     def evaluate(self, test_inputs: pd.DataFrame, test_targets: pd.Series) -> float:
-        """Evaluate the Ridge binary classifier and return the accuracy.
+        """Evaluate the HistGradientBoosting binary classifier and return the accuracy.
 
         Args:
             test_inputs (pandas.DataFrame): The features of the test data.
             test_targets (pandas.Series): The labels of the test data.
         Returns:
-            float: The accuracy of the Ridge binary classifier.
+            float: The accuracy of the HistGradientBoosting binary classifier.
         """
         if self.model is not None:
             return self.model.score(test_inputs, test_targets)
         raise NotFittedError("Model is not fitted yet.")
 
     def save(self, model_dir_path: str) -> None:
-        """Save the Ridge binary classifier to disk.
+        """Save the HistGradientBoosting binary classifier to disk.
 
         Args:
             model_dir_path (str): Dir path to which to save the model.
@@ -108,12 +133,12 @@ class Classifier:
 
     @classmethod
     def load(cls, model_dir_path: str) -> "Classifier":
-        """Load the Ridge binary classifier from disk.
+        """Load the HistGradientBoosting binary classifier from disk.
 
         Args:
             model_dir_path (str): Dir path to the saved model.
         Returns:
-            Classifier: A new instance of the loaded Ridge binary classifier.
+            Classifier: A new instance of the loaded HistGradientBoosting binary classifier.
         """
         model = joblib.load(os.path.join(model_dir_path, PREDICTOR_FILE_NAME))
         return model
@@ -122,7 +147,11 @@ class Classifier:
         # sort params alphabetically for unit test to run successfully
         return (
             f"Model name: {self.model_name} ("
-            f"alpha: {self.alpha})"
+            f"learning_rate: {self.learning_rate}, "
+            f"loss: {self.loss}, "
+            f"max_depth: {self.max_depth}, "
+            f"max_leaf_nodes: {self.max_leaf_nodes}, "
+            f"min_samples_leaf: {self.min_samples_leaf})"
         )
 
 
